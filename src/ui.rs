@@ -6,12 +6,14 @@ use ratatui::{
 };
 
 mod dialogs;
+mod fork;
 mod keybind_help;
 mod menus;
 mod mobile;
 mod navigator;
 mod onboarding;
 mod panes;
+mod picker;
 mod release_notes;
 mod scrollbar;
 mod settings;
@@ -371,6 +373,9 @@ pub fn render_with_runtime_registry(
         render_tab_bar(app, frame, tab_bar_area);
     }
     render_panes(app, terminal_runtimes, frame, terminal_area);
+
+    // Fork overlays sit above panes, below notifications/overlays.
+    fork::render_overlays(app, frame, terminal_area);
 
     // Ambient notifications sit above panes, but below interactive overlays.
     render_notifications(app, frame, terminal_area);

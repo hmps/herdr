@@ -56,6 +56,10 @@ use super::App;
 
 impl App {
     pub(super) async fn handle_key(&mut self, key: TerminalKey) {
+        if super::picker::is_active(&self.state) {
+            self.forward_key_to_picker(key);
+            return;
+        }
         match self.state.mode {
             Mode::Terminal => self.handle_terminal_key(key).await,
             Mode::Prefix => self.handle_prefix_key(key),

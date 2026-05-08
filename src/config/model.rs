@@ -338,6 +338,9 @@ pub struct KeysConfig {
     pub indexed: IndexedKeysConfig,
     /// Equalize all pane sizes in the active tab. Default: "prefix+="
     pub equalize_panes: BindingConfig,
+    /// Open the surface picker (fuzzy finder for workspaces, tabs, panes,
+    /// agents). Default: "prefix+f".
+    pub picker: BindingConfig,
     /// Prefix-mode custom command bindings.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub command: Vec<CommandKeybindConfig>,
@@ -540,6 +543,7 @@ impl Default for KeysConfig {
             toggle_sidebar: BindingConfig::one("prefix+b"),
             indexed: IndexedKeysConfig::default(),
             equalize_panes: BindingConfig::one("prefix+="),
+            picker: BindingConfig::one("prefix+f"),
             command: Vec::new(),
         }
     }

@@ -7,4 +7,5 @@ use super::keybinds::ActionKeybinds;
 #[derive(Debug, Clone, Default)]
 pub struct ForkKeybinds {
     pub equalize_panes: ActionKeybinds,
+    pub picker: ActionKeybinds,
 }

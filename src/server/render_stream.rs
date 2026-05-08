@@ -345,6 +345,10 @@ pub(crate) fn focused_terminal_cursor(
         return None;
     }
 
+    if app_state.picker.is_some() {
+        return None;
+    }
+
     let ws_idx = app_state.active?;
     let info = app_state
         .view

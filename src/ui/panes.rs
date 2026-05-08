@@ -250,7 +250,8 @@ pub(super) fn render_panes(
     };
 
     let multi_pane = ws.layout.pane_count() > 1;
-    let terminal_active = app.mode == Mode::Terminal;
+    let picker_open = app.picker.is_some();
+    let terminal_active = app.mode == Mode::Terminal && !picker_open;
 
     for info in &app.view.pane_infos {
         if let Some(rt) = app.runtime_for_pane_in_workspace(terminal_runtimes, ws_idx, info.id) {

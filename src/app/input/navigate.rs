@@ -50,6 +50,11 @@ impl App {
             return;
         }
 
+        if self.handle_fork_prefix_key(raw_key) {
+            leave_command_mode(&mut self.state);
+            return;
+        }
+
         if let Some(action) = action_for_key(&self.state, raw_key, BindingDispatch::Prefix) {
             if action == NavigateAction::EditScrollback {
                 let previous_mode = self.state.mode;

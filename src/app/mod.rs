@@ -11,8 +11,10 @@ mod api;
 mod api_helpers;
 mod config_io;
 mod creation;
+pub(crate) mod fork_input;
 mod ids;
 mod input;
+pub(crate) mod picker;
 mod runtime;
 mod session;
 pub mod state;
@@ -538,6 +540,7 @@ impl App {
             host_terminal_theme: crate::terminal_theme::TerminalTheme::default(),
             session_dirty: false,
             terminal_runtime_shutdowns: Vec::new(),
+            picker: None,
         };
 
         state.terminals = restored_terminals;
@@ -1285,7 +1288,10 @@ impl App {
                     let key_id = repeat_key_identity(&key);
                     match key.kind {
                         crossterm::event::KeyEventKind::Press => {
-                            if self.state.mode == Mode::Terminal {
+                            if picker::is_active(&self.state) {
+                                self.suppressed_repeat_keys.insert(key_id);
+                                self.forward_key_to_picker(key);
+                            } else if self.state.mode == Mode::Terminal {
                                 self.suppressed_repeat_keys.remove(&key_id);
                                 self.handle_terminal_key_headless(key);
                             } else {
@@ -1294,7 +1300,11 @@ impl App {
                             }
                         }
                         crossterm::event::KeyEventKind::Repeat => {
-                            if self.state.mode == Mode::Terminal
+                            if picker::is_active(&self.state)
+                                && !self.suppressed_repeat_keys.contains(&key_id)
+                            {
+                                self.forward_key_to_picker(key);
+                            } else if self.state.mode == Mode::Terminal
                                 && !self.suppressed_repeat_keys.contains(&key_id)
                             {
                                 self.handle_terminal_key_headless(key);

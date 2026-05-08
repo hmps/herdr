@@ -485,6 +485,7 @@ impl Config {
             toggle_sidebar: action!("keys.toggle_sidebar", &self.keys.toggle_sidebar),
             fork: crate::config::fork_keybinds::ForkKeybinds {
                 equalize_panes: action!("keys.equalize_panes", &self.keys.equalize_panes),
+                picker: action!("keys.picker", &self.keys.picker),
             },
             custom_commands: Vec::new(),
         };

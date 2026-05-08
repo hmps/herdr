@@ -1333,6 +1333,9 @@ pub struct AppState {
     /// Terminal runtimes that should be shut down by the app/runtime layer
     /// after state has detached their terminal metadata.
     pub(crate) terminal_runtime_shutdowns: Vec<crate::terminal::TerminalId>,
+    /// Surface picker (fuzzy finder over workspaces/tabs/panes/agents). `Some`
+    /// means open; closing drops it.
+    pub picker: Option<crate::app::picker::PickerState>,
 }
 
 impl AppState {
@@ -1641,6 +1644,7 @@ impl AppState {
             host_terminal_theme: TerminalTheme::default(),
             session_dirty: false,
             terminal_runtime_shutdowns: Vec::new(),
+            picker: None,
         }
     }
 
