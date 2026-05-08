@@ -1433,6 +1433,50 @@ impl AppState {
         })
     }
 
+    pub fn equalize_panes(&mut self) {
+        use crate::layout::Node;
+
+        fn count_leaves(n: &Node) -> usize {
+            match n {
+                Node::Pane(_) => 1,
+                Node::Split { first, second, .. } => count_leaves(first) + count_leaves(second),
+            }
+        }
+
+        fn collect(node: &Node, path: Vec<bool>, out: &mut Vec<(Vec<bool>, f32)>) {
+            if let Node::Split { first, second, .. } = node {
+                let f = count_leaves(first) as f32;
+                let s = count_leaves(second) as f32;
+                out.push((path.clone(), f / (f + s)));
+                let mut lp = path.clone();
+                lp.push(false);
+                collect(first, lp, out);
+                let mut rp = path;
+                rp.push(true);
+                collect(second, rp, out);
+            }
+        }
+
+        let Some(tab) = self
+            .active
+            .and_then(|i| self.workspaces.get_mut(i))
+            .and_then(|ws| ws.active_tab_mut())
+        else {
+            return;
+        };
+
+        if tab.layout.pane_count() <= 1 {
+            return;
+        }
+
+        let mut assignments = Vec::new();
+        collect(tab.layout.root(), Vec::new(), &mut assignments);
+        for (path, ratio) in assignments {
+            tab.layout.set_ratio_at(&path, ratio);
+        }
+        self.mark_session_dirty();
+    }
+
     /// Close the focused pane. Returns true when the close was deferred to confirmation.
     pub fn close_pane(&mut self) -> bool {
         let active = self.active;
@@ -4127,5 +4171,29 @@ mod tests {
         assert!(!deferred);
         assert_eq!(state.workspaces.len(), 1);
         assert_eq!(state.workspaces[0].display_name(), "notes");
+    }
+
+    #[test]
+    fn equalize_makes_three_pane_layout_balanced() {
+        use ratatui::layout::Rect;
+        let mut state = app_with_workspaces(&["test"]);
+        state.workspaces[0].test_split(Direction::Horizontal);
+        state.workspaces[0].test_split(Direction::Horizontal);
+
+        state.equalize_panes();
+
+        let tab = state.workspaces[0].active_tab().unwrap();
+        let panes = tab.layout.panes(Rect::new(0, 0, 90, 30));
+        let widths: Vec<u16> = panes.iter().map(|p| p.rect.width).collect();
+        let max = *widths.iter().max().unwrap();
+        let min = *widths.iter().min().unwrap();
+        assert!(max - min <= 1, "widths should be ~equal, got {:?}", widths);
+    }
+
+    #[test]
+    fn equalize_is_noop_for_single_pane() {
+        let mut state = AppState::test_new();
+        state.equalize_panes();
+        assert!(!state.session_dirty);
     }
 }

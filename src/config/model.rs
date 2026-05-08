@@ -336,6 +336,8 @@ pub struct KeysConfig {
     pub toggle_sidebar: BindingConfig,
     /// Optional indexed shortcuts expanded over number keys 1-9.
     pub indexed: IndexedKeysConfig,
+    /// Equalize all pane sizes in the active tab. Default: "prefix+="
+    pub equalize_panes: BindingConfig,
     /// Prefix-mode custom command bindings.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub command: Vec<CommandKeybindConfig>,
@@ -537,6 +539,7 @@ impl Default for KeysConfig {
             resize_mode: BindingConfig::one("prefix+r"),
             toggle_sidebar: BindingConfig::one("prefix+b"),
             indexed: IndexedKeysConfig::default(),
+            equalize_panes: BindingConfig::one("prefix+="),
             command: Vec::new(),
         }
     }

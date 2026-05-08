@@ -1,5 +1,6 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
+pub(crate) mod fork_keybinds;
 mod io;
 mod keybinds;
 mod model;

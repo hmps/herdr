@@ -516,6 +516,7 @@ pub(crate) enum NavigateAction {
     OpenNotificationTarget,
     Detach,
     OpenNavigator,
+    EqualizePanes,
 }
 
 fn indexed_navigation_action(
@@ -610,6 +611,7 @@ fn action_for_key(
         (&kb.zoom, NavigateAction::Zoom),
         (&kb.resize_mode, NavigateAction::EnterResizeMode),
         (&kb.toggle_sidebar, NavigateAction::ToggleSidebar),
+        (&kb.fork.equalize_panes, NavigateAction::EqualizePanes),
         (&kb.reload_config, NavigateAction::ReloadConfig),
         (
             &kb.open_notification_target,
@@ -831,6 +833,10 @@ pub(super) fn execute_navigate_action_in_context(
             leave_navigate_mode(state);
         }
         NavigateAction::OpenNavigator => state.open_navigator(),
+        NavigateAction::EqualizePanes => {
+            state.equalize_panes();
+            leave_navigate_mode(state);
+        }
     }
 
     finish_action_context(state, context, previous_mode);
