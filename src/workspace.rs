@@ -187,7 +187,7 @@ impl Workspace {
         render_dirty: Arc<AtomicBool>,
         argv: Option<&[String]>,
     ) -> std::io::Result<(Self, TerminalState, TerminalRuntime)> {
-        let (tab, terminal, runtime) = if let Some(argv) = argv {
+        let (mut tab, terminal, runtime) = if let Some(argv) = argv {
             Tab::new_argv_command(
                 1,
                 initial_cwd.clone(),
@@ -214,6 +214,7 @@ impl Workspace {
                 render_dirty,
             )?
         };
+        tab.set_custom_name(derive_label_from_cwd(&initial_cwd));
         let mut public_pane_numbers = HashMap::new();
         public_pane_numbers.insert(tab.root_pane, 1);
         Ok((
