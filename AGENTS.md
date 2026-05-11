@@ -2,6 +2,20 @@
 
 Terminal workspace manager for AI coding agents. Rust + ratatui.
 
+## Fork
+
+This repo is a personal fork of [ogulcancelik/herdr](https://github.com/ogulcancelik/herdr). `origin` points at the fork (`hmps/herdr`); `upstream` points at the original. We try to stay close to upstream — pull and merge `upstream/master` regularly, and prefer upstreaming generally useful changes rather than carrying them as local-only patches.
+
+## Running the local build as `herdr`
+
+To replace the globally installed `herdr` with this working copy:
+
+```bash
+just install-local
+```
+
+That runs `cargo install --path . --force --locked --root ~/.local`, overwriting `~/.local/bin/herdr` in place. Re-run after each change you want to ship to the global CLI.
+
 ## Principles
 
 - **State is separated from runtime.** `AppState` is pure data, testable without PTYs or async. `PaneState` is separate from `PaneRuntime`. Workspace logic doesn't need real terminals.

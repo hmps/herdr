@@ -38,6 +38,10 @@ build:
 website-build:
     cd website && bun install --frozen-lockfile && bun run build
 
+# Install this working copy as the global `herdr` binary in ~/.local/bin
+install-local:
+    cargo install --path . --force --locked --root ~/.local
+
 # Build the vendored libghostty-vt source dist
 build-libghostty-vt:
     scripts/build_vendored_libghostty_vt.sh
