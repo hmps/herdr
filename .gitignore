@@ -17,3 +17,6 @@ __pycache__/
 /.pi/cache
 /result
 /result-*
+
+.claude/plans
+.opencode/plans
