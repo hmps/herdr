@@ -21,3 +21,4 @@ __pycache__/
 .claude/plans
 .claude/settings.local.json
 .opencode/plans
+.pi-lens/
