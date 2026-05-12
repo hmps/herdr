@@ -2863,7 +2863,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
 
         assert_eq!(app.state.mode, Mode::Navigate);
@@ -2894,7 +2894,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
         assert_eq!(app.state.mode, Mode::Navigate);
 
@@ -2934,7 +2934,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
 
         let viewport = crate::ui::mobile_switcher_areas(&app.state).viewport;
@@ -2973,7 +2973,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
         let viewport = crate::ui::mobile_switcher_areas(&app.state).viewport;
 
@@ -3008,7 +3008,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
         assert_eq!(app.state.mode, Mode::Navigate);
 
@@ -3038,7 +3038,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
 
         assert_eq!(app.state.mode, Mode::Terminal);
@@ -3059,7 +3059,7 @@ mod tests {
         app.handle_mouse(mouse(
             MouseEventKind::Down(MouseButton::Left),
             switch.x + 1,
-            switch.y + 1,
+            switch.y,
         ));
         assert_eq!(app.state.mode, Mode::Navigate);
 

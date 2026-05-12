@@ -67,7 +67,7 @@ pub(crate) fn mobile_switcher_areas(app: &AppState) -> MobileSwitcherAreas {
         return MobileSwitcherAreas::default();
     }
 
-    let header_h = screen.height.min(2);
+    let header_h = screen.height.min(1);
     let close_w = 10u16.min(screen.width);
     let close = Rect::new(
         screen.x + screen.width.saturating_sub(close_w),
@@ -295,6 +295,8 @@ fn render_header_status(
     let tab_w = (tab_label.chars().count() as u16 + 1).min(area.width);
     let name_w = area.width.saturating_sub(tab_w);
 
+    let status = agent_priority_label(app);
+    let name_max = name_w.saturating_sub(4 + status.chars().count() as u16) as usize;
     frame.render_widget(
         Paragraph::new(Line::from(vec![
             Span::raw(" "),
@@ -303,13 +305,14 @@ fn render_header_status(
             Span::styled(
                 truncate(
                     &ws.display_name_from(&app.terminals, terminal_runtimes),
-                    name_w.saturating_sub(4) as usize,
+                    name_max,
                 ),
                 Style::default()
                     .fg(p.text)
                     .bg(p.panel_bg)
                     .add_modifier(Modifier::BOLD),
             ),
+            Span::styled(status, Style::default().fg(p.overlay1).bg(p.panel_bg)),
         ])),
         Rect::new(row1.x, row1.y, name_w, 1),
     );
@@ -319,14 +322,6 @@ fn render_header_status(
             .alignment(Alignment::Right),
         Rect::new(row1.x + name_w, row1.y, tab_w, 1),
     );
-
-    if area.height > 1 {
-        frame.render_widget(
-            Paragraph::new(agent_priority_label(app))
-                .style(Style::default().fg(p.overlay1).bg(p.panel_bg)),
-            Rect::new(area.x, area.y + 1, area.width, 1),
-        );
-    }
 }
 
 fn render_switch_button(app: &AppState, frame: &mut Frame, area: Rect) {
@@ -340,7 +335,7 @@ fn render_switch_button(app: &AppState, frame: &mut Frame, area: Rect) {
             .set_symbol("│")
             .set_style(Style::default().fg(p.surface_dim).bg(p.surface0));
     }
-    let label_y = if area.height > 1 { area.y + 1 } else { area.y };
+    let label_y = area.y;
     frame.render_widget(
         Paragraph::new("switch")
             .style(
@@ -376,19 +371,6 @@ fn render_close_button(app: &AppState, frame: &mut Frame, area: Rect) {
             .alignment(Alignment::Center),
         Rect::new(area.x + 1, area.y, area.width.saturating_sub(1), 1),
     );
-    if area.height > 1 {
-        frame.render_widget(
-            Paragraph::new("×")
-                .style(
-                    Style::default()
-                        .fg(p.text)
-                        .bg(p.surface0)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .alignment(Alignment::Center),
-            Rect::new(area.x + 1, area.y + 1, area.width.saturating_sub(1), 1),
-        );
-    }
 }
 
 fn mobile_switcher_content_height(app: &AppState) -> usize {

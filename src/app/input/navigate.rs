@@ -1473,7 +1473,7 @@ navigate_pane_right = "ctrl+l"
         state.active = Some(0);
         state.selected = 0;
         state.mode = Mode::Navigate;
-        crate::ui::compute_view(&mut state, ratatui::layout::Rect::new(0, 0, 44, 8));
+        crate::ui::compute_view(&mut state, ratatui::layout::Rect::new(0, 0, 44, 7));
         assert_eq!(state.mobile_switcher_scroll, 0);
 
         handle_navigate_key(
