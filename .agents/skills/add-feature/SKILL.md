@@ -37,8 +37,11 @@ Avoid:
 - Reformatting unrelated lines (rustfmt edits to untouched code).
 - Refactors that move upstream code around without a behavior reason.
 - "While I'm here" cleanups in upstream files.
+- **Overloading an existing upstream API/endpoint with new semantics.** If you need new behavior on something like `pane.rename` or an existing socket method, add a new endpoint (`pane.set_task_label`) rather than changing what the existing one does. When upstream later evolves the same endpoint, git auto-merges the field/param definitions but the semantics collide silently — no conflict marker, broken behavior.
+- **Adding parameters to upstream function signatures.** If `foo(a, b, c)` needs a new arg for your feature, prefer a wrapper (`foo_with_label(a, b, c, label)` that calls `foo`) over editing the signature. Signature edits collide cleanly with any upstream signature edit and force you to touch every test caller in the merge.
+- **Positional indexing (`some_list[N]`) into a list that upstream also maintains.** If both sides append entries to the same `Vec`/array literal, indices silently drift and tests fail at runtime with no compiler help. Either look up by name/key, or extract the indices to named constants colocated with the list so a future merge surfaces the drift visibly.
 
-Each of those creates merge conflicts for zero functional gain.
+Each of those creates merge conflicts (or worse, silent semantic conflicts) for zero functional gain.
 
 ## Workflow
 

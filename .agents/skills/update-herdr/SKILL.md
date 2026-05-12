@@ -33,7 +33,9 @@ Run `/update-herdr` in Claude Code.
 
 **Conflict preview**: dry-run merge (`git merge --no-commit --no-ff` then `--abort`) to list conflicting files before you commit.
 
-**Conflict resolution**: opens only conflicted files, resolves the conflict markers, keeps local customizations intact.
+**Conflict resolution**: opens only conflicted files, resolves the conflict markers, keeps local customizations intact. Also watches for semantic collisions git auto-merge can't see (shared APIs both sides changed; positional indices into a list both sides modified).
+
+**Fail-fast build**: runs `cargo build --locked` immediately after the merge to surface duplicate definitions, missing args, or missing fields — the kind of breakage git auto-merges into existence without conflict markers.
 
 **Validation**: runs `just check` (lint + tests + script tests). Falls back to `cargo build --locked` + `cargo nextest run --locked` if `just` is unavailable.
 
@@ -154,6 +156,9 @@ If conflicts occur:
   - Incorporate upstream fixes/improvements.
   - Do not refactor surrounding code.
   - `git add <file>`
+- Watch for **semantic collisions** — these don't show as conflict markers but matter:
+  - **Shared API / endpoint**: if both sides changed the behavior of the same method, route, or CLI subcommand (e.g., both bound new features to `pane.rename`), pick one semantics and update the other side's tests/docs to match. Auto-merge will happily keep both field definitions even when only one behavior survives.
+  - **Positional index drift**: if both sides modified the same array/vec literal (especially `optional_bindings`-style lists), indices used elsewhere may be silently wrong. Re-derive any `foo[N]` references that point into a list both sides touched.
 - When all resolved, if the merge did not auto-commit: `git commit --no-edit`.
 
 # Step 4B: Selective update (CHERRY-PICK)
@@ -191,6 +196,22 @@ Check whether the update touched the manifest or lockfile:
 If `Cargo.toml` changed but `Cargo.lock` did not, run `cargo update -p herdr --offline` to refresh the lockfile entry for this package without hitting the network.
 
 Otherwise skip — `just check` / `cargo build` will pull what they need.
+
+# Step 4.7: Catch silent auto-merge duplicates (fail-fast build)
+
+Before running the full `just check`, run a quick build to surface issues git's auto-merge couldn't see:
+- `cargo build --locked`
+
+Git's "Auto-merging" succeeds with no conflict markers when both sides add similar content in the same region. This produces duplicate definitions that only the compiler catches. Common patterns from past runs:
+- Duplicate `fn` / `struct` / `enum` declared twice (E0428)
+- Duplicate struct field (E0124) — e.g., the same field name added by both sides in a struct that auto-merged
+- Duplicate match arm — unreachable-pattern warning, but a real bug
+- Signature change on one side + new caller on the other → missing argument (E0061)
+- Both sides added a new field to the same struct → callers from one side miss the other's field (E0063)
+
+If `cargo build` fails: fix only the merge-caused issues (remove the obvious duplicate, add the missing field/arg). Do not refactor. Re-run `cargo build` until it's green, then proceed to Step 5.
+
+If it builds clean, proceed.
 
 # Step 5: Validation
 
