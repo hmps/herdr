@@ -6,6 +6,29 @@ Terminal workspace manager for AI coding agents. Rust + ratatui.
 
 This repo is a personal fork of [ogulcancelik/herdr](https://github.com/ogulcancelik/herdr). `origin` points at the fork (`hmps/herdr`); `upstream` points at the original. We try to stay close to upstream — pull and merge `upstream/master` regularly, and prefer upstreaming generally useful changes rather than carrying them as local-only patches.
 
+## Fork seams
+
+Fork features (equalize-panes, fuzzy picker) touch upstream-owned files at exactly **three hook points** so rebasing onto a new upstream conflicts in one predictable place per concern instead of being scattered. Each hook is a single line/field that delegates into a **fork-owned file** where the actual fork logic lives.
+
+| Seam | Upstream hook (one line) | Fork-owned file |
+|---|---|---|
+| Keybinds | `src/config/keybinds.rs`: one `pub fork: ForkKeybinds` field on `struct Keybinds`, and one contiguous `fork: ForkKeybinds { … }` block in `validated_keybinds` (using the in-scope `action!` macro) | `src/config/fork_keybinds.rs` (`struct ForkKeybinds`) |
+| Input (prefix mode) | `src/app/input/navigate.rs` `handle_prefix_key`: one `if self.handle_fork_prefix_key(raw_key) { leave_command_mode(&mut self.state); return; }` | `src/app/fork_input.rs` (`App::handle_fork_prefix_key`) |
+| Render | `src/ui.rs` render path (between `render_panes` and `render_notifications`): one `fork::render_overlays(app, frame, terminal_area);` | `src/ui/fork.rs` (`render_overlays`) |
+
+Read sites that reference a fork keybind use `kb.fork.<name>` (e.g. `src/ui/keybind_help.rs`, `src/ui/menus.rs`, and the `NavigateAction` action table in `navigate.rs`).
+
+Notes:
+- The backing TOML config stays **flat** on `KeysConfig` (`keys.equalize_panes`, `keys.picker`) — `ForkKeybinds` only groups the parsed runtime bindings, so config files are unchanged.
+- `equalize_panes` intentionally routes through the upstream `NavigateAction` action table (`navigate.rs` action table → `state.equalize_panes()`), **not** through `handle_fork_prefix_key`. Only bindings that bypass the action table (picker) live in `fork_input.rs`.
+
+### Rebase playbook
+
+When rebasing the fork onto a newer upstream:
+- Expect conflicts only at the three hook points above. Resolve each by keeping the single fork line/field and pushing any new fork content into the fork-owned file (`fork_keybinds.rs` / `fork_input.rs` / `ui/fork.rs`) — never re-scatter it back into the upstream file.
+- Adding a *new* fork keybind/overlay = a new field in `ForkKeybinds` + its builder line, a branch in `handle_fork_prefix_key` (or an action-table row if it should route through `NavigateAction`), and an overlay call in `render_overlays`. The upstream prefix handler and render path gain **zero** new lines.
+- Invariants to assert after a rebase: `navigate.rs::handle_prefix_key` has exactly one fork line; the `ui.rs` render path has exactly one `fork::render_overlays`; `keybinds.rs` has exactly one `fork` field and one contiguous fork builder block; the three fork files exist; the flat `keys.*` TOML keys are unchanged.
+
 ## Running the local build as `herdr`
 
 To replace the globally installed `herdr` with this working copy:
