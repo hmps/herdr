@@ -291,7 +291,8 @@ pub struct KeysConfig {
     pub new_tab: BindingConfig,
     /// Rename the active tab. Default: "prefix+shift+t".
     pub rename_tab: BindingConfig,
-    /// Select the previous tab. Default: "prefix+p".
+    /// Select the previous tab. Unset by default in this fork (prefix+p is
+    /// reused by the surface picker).
     pub previous_tab: BindingConfig,
     /// Select the next tab. Default: "prefix+n".
     pub next_tab: BindingConfig,
@@ -339,7 +340,7 @@ pub struct KeysConfig {
     /// Equalize all pane sizes in the active tab. Default: "prefix+="
     pub equalize_panes: BindingConfig,
     /// Open the surface picker (fuzzy finder for workspaces, tabs, panes,
-    /// agents). Default: "prefix+f".
+    /// agents). Default: "prefix+p".
     pub picker: BindingConfig,
     /// Prefix-mode custom command bindings.
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -520,7 +521,7 @@ impl Default for KeysConfig {
             focus_agent: BindingConfig::empty(),
             new_tab: BindingConfig::one("prefix+c"),
             rename_tab: BindingConfig::one("prefix+shift+t"),
-            previous_tab: BindingConfig::one("prefix+p"),
+            previous_tab: BindingConfig::empty(),
             next_tab: BindingConfig::one("prefix+n"),
             switch_tab: BindingConfig::one("prefix+1..9"),
             switch_workspace: BindingConfig::empty(),
@@ -543,7 +544,7 @@ impl Default for KeysConfig {
             toggle_sidebar: BindingConfig::one("prefix+b"),
             indexed: IndexedKeysConfig::default(),
             equalize_panes: BindingConfig::one("prefix+="),
-            picker: BindingConfig::one("prefix+f"),
+            picker: BindingConfig::one("prefix+p"),
             command: Vec::new(),
         }
     }

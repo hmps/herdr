@@ -1722,13 +1722,9 @@ switch_workspace = "prefix+shift+1..9"
                 KeyModifiers::empty()
             ))]
         );
-        assert_eq!(
-            binding_triggers(&kb.previous_tab),
-            vec![BindingTrigger::Prefix((
-                KeyCode::Char('p'),
-                KeyModifiers::empty()
-            ))]
-        );
+        // Fork: prefix+p is reused by the surface picker, so previous_tab is
+        // unbound by default.
+        assert!(binding_triggers(&kb.previous_tab).is_empty());
         assert_eq!(kb.switch_tab.len(), 9);
         assert!(kb
             .switch_tab
@@ -1775,6 +1771,25 @@ description = "say hello"
         assert_eq!(
             keybinds.custom_commands[0].description,
             Some("say hello".to_string())
+        );
+    }
+
+    #[test]
+    fn fork_keybind_defaults() {
+        let kb = Config::default().keybinds();
+        assert_eq!(
+            binding_triggers(&kb.fork.equalize_panes),
+            vec![BindingTrigger::Prefix((
+                KeyCode::Char('='),
+                KeyModifiers::empty()
+            ))]
+        );
+        assert_eq!(
+            binding_triggers(&kb.fork.picker),
+            vec![BindingTrigger::Prefix((
+                KeyCode::Char('p'),
+                KeyModifiers::empty()
+            ))]
         );
     }
 }
