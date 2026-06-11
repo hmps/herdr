@@ -429,6 +429,36 @@ impl Workspace {
         self.split_pane_with_runtime(
             pane_id,
             direction,
+            None,
+            rows,
+            cols,
+            cwd,
+            scrollback_limit_bytes,
+            host_terminal_theme,
+            shell_config,
+            focus_new_pane,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn split_pane_with_ratio(
+        &mut self,
+        pane_id: PaneId,
+        direction: Direction,
+        ratio: f32,
+        rows: u16,
+        cols: u16,
+        cwd: Option<PathBuf>,
+        scrollback_limit_bytes: usize,
+        host_terminal_theme: crate::terminal_theme::TerminalTheme,
+        shell_config: crate::pane::PaneShellConfig<'_>,
+        focus_new_pane: bool,
+    ) -> Option<std::io::Result<(usize, crate::workspace::tab::NewPane)>> {
+        self.split_pane_with_runtime(
+            pane_id,
+            direction,
+            Some(ratio),
             rows,
             cols,
             cwd,
@@ -456,6 +486,7 @@ impl Workspace {
         self.split_pane_with_runtime(
             pane_id,
             direction,
+            None,
             rows,
             cols,
             cwd,
@@ -472,6 +503,7 @@ impl Workspace {
         &mut self,
         pane_id: PaneId,
         direction: Direction,
+        ratio: Option<f32>,
         rows: u16,
         cols: u16,
         cwd: Option<PathBuf>,
@@ -496,15 +528,27 @@ impl Workspace {
                 host_terminal_theme,
             )
         } else {
-            tab.split_focused(
-                direction,
-                rows,
-                cols,
-                cwd,
-                scrollback_limit_bytes,
-                host_terminal_theme,
-                shell_config,
-            )
+            match ratio {
+                Some(ratio) => tab.split_focused_with_ratio(
+                    direction,
+                    ratio,
+                    rows,
+                    cols,
+                    cwd,
+                    scrollback_limit_bytes,
+                    host_terminal_theme,
+                    shell_config,
+                ),
+                None => tab.split_focused(
+                    direction,
+                    rows,
+                    cols,
+                    cwd,
+                    scrollback_limit_bytes,
+                    host_terminal_theme,
+                    shell_config,
+                ),
+            }
         } {
             Ok(new_pane) => new_pane,
             Err(err) => {

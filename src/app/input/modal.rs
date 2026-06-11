@@ -152,7 +152,11 @@ pub(crate) fn handle_global_menu_key(state: &mut AppState, key: KeyEvent) {
     }
 }
 
-pub(crate) fn handle_navigator_key(state: &mut AppState, key: KeyEvent) {
+pub(crate) fn handle_navigator_key(
+    state: &mut AppState,
+    terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    key: KeyEvent,
+) {
     if state.navigator.search_focused {
         match key.code {
             KeyCode::Esc => {
@@ -163,36 +167,34 @@ pub(crate) fn handle_navigator_key(state: &mut AppState, key: KeyEvent) {
                     state.navigator.query.clear();
                     state.navigator.state_filter = None;
                     state.navigator.search_focused = false;
-                    state.clamp_navigator_selection();
+                    state.clamp_navigator_selection_from(terminal_runtimes);
                 }
             }
             KeyCode::Enter => {
-                state.accept_navigator_selection();
+                state.accept_navigator_selection_from(terminal_runtimes);
             }
             KeyCode::Backspace => {
                 state.navigator.state_filter = None;
                 state.navigator.query.pop();
-                state.clamp_navigator_selection();
+                state.clamp_navigator_selection_from(terminal_runtimes);
             }
-            KeyCode::Up => state.move_navigator_selection(-1),
-            KeyCode::Down => state.move_navigator_selection(1),
+            KeyCode::Up => state.move_navigator_selection_from(terminal_runtimes, -1),
+            KeyCode::Down => state.move_navigator_selection_from(terminal_runtimes, 1),
             KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
-                state.move_navigator_selection(1)
+                state.move_navigator_selection_from(terminal_runtimes, 1)
             }
             KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => {
-                state.move_navigator_selection(-1)
+                state.move_navigator_selection_from(terminal_runtimes, -1)
             }
             KeyCode::Char('u') if key.modifiers == KeyModifiers::CONTROL => {
                 state.navigator.query.clear();
                 state.navigator.state_filter = None;
-                state.clamp_navigator_selection();
+                state.clamp_navigator_selection_from(terminal_runtimes);
             }
             KeyCode::Char(c)
                 if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT =>
             {
-                state.navigator.state_filter = None;
-                state.navigator.query.push(c);
-                state.clamp_navigator_selection();
+                insert_navigator_search_text(state, terminal_runtimes, &c.to_string());
             }
             _ => {}
         }
@@ -206,65 +208,90 @@ pub(crate) fn handle_navigator_key(state: &mut AppState, key: KeyEvent) {
             } else {
                 state.navigator.query.clear();
                 state.navigator.state_filter = None;
-                state.clamp_navigator_selection();
+                state.clamp_navigator_selection_from(terminal_runtimes);
             }
         }
         KeyCode::Enter => {
-            state.accept_navigator_selection();
+            state.accept_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Char('/') => {
             state.navigator.query.clear();
             state.navigator.state_filter = None;
             state.navigator.search_focused = true;
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Backspace if state.navigator.state_filter.is_some() => {
             state.navigator.state_filter = None;
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Char('a') if key.modifiers.is_empty() => {
             state.navigator.query.clear();
             state.navigator.state_filter = None;
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Char('b') if key.modifiers.is_empty() => {
             state.navigator.query.clear();
             state.navigator.state_filter = Some(NavigatorStateFilter::Blocked);
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Char('w') if key.modifiers.is_empty() => {
             state.navigator.query.clear();
             state.navigator.state_filter = Some(NavigatorStateFilter::Working);
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Char('i') if key.modifiers.is_empty() => {
             state.navigator.query.clear();
             state.navigator.state_filter = Some(NavigatorStateFilter::Idle);
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
         KeyCode::Char('d') if key.modifiers.is_empty() => {
             state.navigator.query.clear();
             state.navigator.state_filter = Some(NavigatorStateFilter::Done);
-            state.clamp_navigator_selection();
+            state.clamp_navigator_selection_from(terminal_runtimes);
         }
-        KeyCode::Char('j') | KeyCode::Down => state.move_navigator_selection(1),
-        KeyCode::Char('k') | KeyCode::Up => state.move_navigator_selection(-1),
-        KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
-            state.move_navigator_selection((state.navigator_body_rect().height / 2).max(1) as isize)
+        KeyCode::Char('j') | KeyCode::Down => {
+            state.move_navigator_selection_from(terminal_runtimes, 1)
         }
+        KeyCode::Char('k') | KeyCode::Up => {
+            state.move_navigator_selection_from(terminal_runtimes, -1)
+        }
+        KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => state
+            .move_navigator_selection_from(
+                terminal_runtimes,
+                (state.navigator_body_rect().height / 2).max(1) as isize,
+            ),
         KeyCode::Char('u') if key.modifiers == KeyModifiers::CONTROL => state
-            .move_navigator_selection(-((state.navigator_body_rect().height / 2).max(1) as isize)),
-        KeyCode::Char(' ') => state.toggle_selected_navigator_workspace(),
+            .move_navigator_selection_from(
+                terminal_runtimes,
+                -((state.navigator_body_rect().height / 2).max(1) as isize),
+            ),
+        KeyCode::Char(' ') => state.toggle_selected_navigator_workspace_from(terminal_runtimes),
         KeyCode::Home => {
             state.navigator.selected = 0;
-            state.ensure_navigator_selection_visible();
+            state.ensure_navigator_selection_visible_from(terminal_runtimes);
         }
         KeyCode::End | KeyCode::Char('G') => {
-            state.navigator.selected = state.navigator_rows().len().saturating_sub(1);
-            state.ensure_navigator_selection_visible();
+            state.navigator.selected = state
+                .navigator_rows_from(terminal_runtimes)
+                .len()
+                .saturating_sub(1);
+            state.ensure_navigator_selection_visible_from(terminal_runtimes);
         }
         _ => {}
     }
+}
+
+pub(crate) fn insert_navigator_search_text(
+    state: &mut AppState,
+    terminal_runtimes: &crate::terminal::TerminalRuntimeRegistry,
+    text: &str,
+) {
+    if !state.navigator.search_focused {
+        return;
+    }
+    state.navigator.state_filter = None;
+    state.navigator.query.push_str(text);
+    state.clamp_navigator_selection_from(terminal_runtimes);
 }
 
 pub(crate) fn handle_keybind_help_key(state: &mut AppState, key: KeyEvent) {
@@ -482,6 +509,13 @@ fn clear_rename_input(state: &mut AppState) {
     state.name_input_replace_on_type = false;
 }
 
+pub(crate) fn insert_rename_input_text(state: &mut AppState, text: &str) {
+    if state.name_input_replace_on_type {
+        clear_rename_input(state);
+    }
+    state.name_input.push_str(text);
+}
+
 fn delete_rename_input_char(state: &mut AppState) {
     if state.name_input_replace_on_type {
         clear_rename_input(state);
@@ -562,10 +596,7 @@ pub(crate) fn handle_rename_key(state: &mut AppState, key: KeyEvent) {
         }
         KeyCode::Backspace => delete_rename_input_char(state),
         KeyCode::Char(c) if key.modifiers.difference(KeyModifiers::SHIFT).is_empty() => {
-            if state.name_input_replace_on_type {
-                clear_rename_input(state);
-            }
-            state.name_input.push(c);
+            insert_rename_input_text(state, &c.to_string());
         }
         _ => {}
     }
@@ -706,33 +737,111 @@ pub(super) fn apply_context_menu_action(
         (ContextMenuKind::Pane { pane_id, .. }, Some("Rename pane")) => {
             open_rename_pane(state, pane_id);
         }
-        (ContextMenuKind::Pane { pane_id, .. }, Some("Clear pane name")) => {
-            if let Some(ws_idx) = state.active {
-                if let Some(ws) = state.workspaces.get(ws_idx) {
-                    if let Some(pane) = ws.pane_state(pane_id) {
-                        let terminal_id = pane.attached_terminal_id.clone();
-                        if let Some(terminal) = state.terminals.get_mut(&terminal_id) {
-                            terminal.clear_manual_label();
-                            state.mark_session_dirty();
-                        }
+        (
+            ContextMenuKind::Pane {
+                ws_idx, pane_id, ..
+            },
+            Some("Clear pane name"),
+        ) => {
+            if let Some(ws) = state.workspaces.get(ws_idx) {
+                if let Some(pane) = ws.pane_state(pane_id) {
+                    let terminal_id = pane.attached_terminal_id.clone();
+                    if let Some(terminal) = state.terminals.get_mut(&terminal_id) {
+                        terminal.clear_manual_label();
+                        state.mark_session_dirty();
                     }
                 }
             }
             state.mode = Mode::Terminal;
         }
-        (ContextMenuKind::Pane { .. }, Some("Split vertical")) => {
+        (
+            ContextMenuKind::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+                source_pane_id,
+                ..
+            },
+            Some("Swap with focused pane"),
+        ) => {
+            if let Some(source_pane_id) = source_pane_id {
+                state.selected = ws_idx;
+                state.active = Some(ws_idx);
+                state.switch_tab(tab_idx);
+                if let Some(tab) = state
+                    .workspaces
+                    .get_mut(ws_idx)
+                    .and_then(|ws| ws.tabs.get_mut(tab_idx))
+                {
+                    if tab.layout.swap_panes(source_pane_id, pane_id) {
+                        tab.layout.focus_pane(source_pane_id);
+                        state.mark_session_dirty();
+                    }
+                }
+            }
+            state.mode = Mode::Terminal;
+        }
+        (
+            ContextMenuKind::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+                ..
+            },
+            Some("Split right"),
+        ) => {
+            state.selected = ws_idx;
+            state.active = Some(ws_idx);
+            state.switch_tab(tab_idx);
+            state.focus_pane_in_workspace(ws_idx, pane_id);
             state.split_pane(terminal_runtimes, Direction::Horizontal);
             state.mode = Mode::Terminal;
         }
-        (ContextMenuKind::Pane { .. }, Some("Split horizontal")) => {
+        (
+            ContextMenuKind::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+                ..
+            },
+            Some("Split down"),
+        ) => {
+            state.selected = ws_idx;
+            state.active = Some(ws_idx);
+            state.switch_tab(tab_idx);
+            state.focus_pane_in_workspace(ws_idx, pane_id);
             state.split_pane(terminal_runtimes, Direction::Vertical);
             state.mode = Mode::Terminal;
         }
-        (ContextMenuKind::Pane { .. }, Some("Zoom")) => {
+        (
+            ContextMenuKind::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+                ..
+            },
+            Some("Zoom"),
+        ) => {
+            state.selected = ws_idx;
+            state.active = Some(ws_idx);
+            state.switch_tab(tab_idx);
+            state.focus_pane_in_workspace(ws_idx, pane_id);
             state.toggle_zoom();
             state.mode = Mode::Terminal;
         }
-        (ContextMenuKind::Pane { .. }, Some("Close pane")) => {
+        (
+            ContextMenuKind::Pane {
+                ws_idx,
+                tab_idx,
+                pane_id,
+                ..
+            },
+            Some("Close pane"),
+        ) => {
+            state.selected = ws_idx;
+            state.active = Some(ws_idx);
+            state.switch_tab(tab_idx);
+            state.focus_pane_in_workspace(ws_idx, pane_id);
             if !state.close_pane() {
                 state.mode = if state.active.is_some() {
                     Mode::Terminal
@@ -1000,6 +1109,23 @@ mod tests {
     }
 
     #[test]
+    fn rename_modal_replaces_prefilled_text_on_paste() {
+        let mut state = state_with_workspaces(&["test"]);
+        state.mode = Mode::RenameTab;
+        state.name_input = "2".into();
+        state.name_input_replace_on_type = true;
+
+        insert_rename_input_text(&mut state, "feature/logs");
+
+        assert_eq!(state.name_input, "feature/logs");
+        assert!(!state.name_input_replace_on_type);
+
+        insert_rename_input_text(&mut state, "-copy");
+
+        assert_eq!(state.name_input, "feature/logs-copy");
+    }
+
+    #[test]
     fn rename_modal_handles_line_editing_shortcuts() {
         let mut state = state_with_workspaces(&["test"]);
         state.mode = Mode::RenameWorkspace;
@@ -1069,6 +1195,32 @@ mod tests {
             KeyEvent::new(KeyCode::Char('Z'), KeyModifiers::SHIFT),
         );
         assert_eq!(state.name_input, "websiteZ");
+    }
+
+    #[test]
+    fn navigator_search_accepts_pasted_text_when_focused() {
+        let mut state = state_with_workspaces(&["alpha", "beta"]);
+        let terminal_runtimes = crate::terminal::TerminalRuntimeRegistry::new();
+        state.mode = Mode::Navigator;
+        state.navigator.search_focused = true;
+        state.navigator.state_filter = Some(NavigatorStateFilter::Working);
+
+        insert_navigator_search_text(&mut state, &terminal_runtimes, "beta");
+
+        assert_eq!(state.navigator.query, "beta");
+        assert_eq!(state.navigator.state_filter, None);
+    }
+
+    #[test]
+    fn navigator_search_ignores_paste_when_search_is_not_focused() {
+        let mut state = state_with_workspaces(&["alpha", "beta"]);
+        let terminal_runtimes = crate::terminal::TerminalRuntimeRegistry::new();
+        state.mode = Mode::Navigator;
+        state.navigator.search_focused = false;
+
+        insert_navigator_search_text(&mut state, &terminal_runtimes, "beta");
+
+        assert!(state.navigator.query.is_empty());
     }
 
     #[test]
@@ -1285,7 +1437,10 @@ mod tests {
         let pane_id = state.workspaces[0].tabs[0].root_pane;
         let menu = ContextMenuState {
             kind: ContextMenuKind::Pane {
+                ws_idx: 0,
+                tab_idx: 0,
                 pane_id,
+                source_pane_id: None,
                 has_manual_label: false,
             },
             x: 0,
